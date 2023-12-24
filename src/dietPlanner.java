@@ -8,7 +8,6 @@ public class dietPlanner {
     
 private Map<String, Integer> mealIndexMap;
 private double[][] adjacencyMatrix;
-public double[] doubleArray = new double[30];
 
 public dietPlanner(String[] mealItems) {
     
@@ -44,8 +43,6 @@ private void buildGraph(String[] mealItems) {
 }
 
 public static double calculateDailyCalories(double currentWeight, double height, int age, String gender) {
-
-    // Calculate calories per day based on gender
     double caloriesPerDay;
     if (gender.equalsIgnoreCase("Male")) {
         caloriesPerDay = 66 + (6.3 *(currentWeight* 2.20462)) + (12.9*height)-(6.8* age);
@@ -59,7 +56,7 @@ public static double calculateDailyCalories(double currentWeight, double height,
 }
 
 
- private static int[] findEdge(double[][] adjacencyMatrix, int[] visitedCount, int maxVisitCount,double dailyCalories,double loseWeightInCalories,double doubleArray[]) {
+ private static int[] findEdge(double[][] adjacencyMatrix, int[] visitedCount, int maxVisitCount,double dailyCalories,double[] lose,double loseWeightInCalories) {
         int numNodes = adjacencyMatrix.length;
         Queue<Integer> queue = new ArrayDeque<>();
 
@@ -68,20 +65,13 @@ public static double calculateDailyCalories(double currentWeight, double height,
                 queue.offer(i);
             }
         }
-        double [] array=new double[30];
-        for(int i=0;i<30;i++){
-            array[i]=doubleArray[i];
-        }
-        int k=0;
         while (!queue.isEmpty()) {
             int currentNode = queue.poll();
             
             for (int neighbor = 0; neighbor < numNodes; neighbor++) {
-                if (adjacencyMatrix[currentNode][neighbor] > 0 && adjacencyMatrix[currentNode][neighbor] <=array[k]&& adjacencyMatrix[currentNode][neighbor] <=Math.ceil(dailyCalories)) {
-                    double difference=array[k]-adjacencyMatrix[currentNode][neighbor];
-                    array[k+1]+=difference;
-                    System.out.println(array[k]+ " "+ adjacencyMatrix[currentNode][neighbor]);
-                    k++;
+                if (adjacencyMatrix[currentNode][neighbor] > 0 && adjacencyMatrix[currentNode][neighbor] <= Math.ceil(lose[0])&& adjacencyMatrix[currentNode][neighbor] <=Math.ceil(dailyCalories)) {
+                    double difference=lose[0]-adjacencyMatrix[currentNode][neighbor];
+                    lose[1] = difference + loseWeightInCalories;
                     visitedCount[currentNode]++;
                     visitedCount[neighbor]++;
                     return new int[]{currentNode, neighbor};
@@ -92,7 +82,7 @@ public static double calculateDailyCalories(double currentWeight, double height,
         return null;
     }
 
-public void printGraph(int schedule, double dailyCalories,double loseWeightInCalories,double doubleArray[]) {
+public void printGraph(int schedule, double dailyCalories,double loseWeightInCalories, String[] mealNames) {
     // for (int i = 0; i < adjacencyMatrix.length; i++) {
     //     for (int j = 0; j < adjacencyMatrix[i].length; j++) {
     //         System.out.printf(adjacencyMatrix[i][j]+" ");
@@ -102,12 +92,22 @@ public void printGraph(int schedule, double dailyCalories,double loseWeightInCal
     int numNodes = adjacencyMatrix.length;
 int[] visitedCount = new int[numNodes];
 int maxVisitCount = 1;
+        double[] lose = new double[2];
+        lose[0] = loseWeightInCalories;
+        int l=1;
     for (int i = 0; i < schedule; i++) {
-        int[] edge = findEdge(adjacencyMatrix, visitedCount, maxVisitCount,dailyCalories,loseWeightInCalories,doubleArray);
+
+        int[] edge = findEdge(adjacencyMatrix, visitedCount, maxVisitCount,dailyCalories,lose, loseWeightInCalories);
         if (edge != null) {
-            System.out.printf("Edge with weight less than 1500: Nodes %d and %d and %d\n", edge[0], edge[1],adjacencyMatrix[edge[0]][edge[1]]);
+
+System.out.println("Day " + l++ + " Meal =>");
+System.out.println("  First Meal: " + mealNames[edge[0]]);
+System.out.println("  Second Meal: " + mealNames[edge[1]]);
+System.out.println("  Total Calories: " + adjacencyMatrix[edge[0]][edge[1]]);
+System.out.println("***********************************");
+            lose[0] = lose[1];
         } else {
-            System.out.println("No more edges with weight less than 1500.");
+            System.out.println("No more edges with satisfy your condition....Please add more meal items");
             break;
         }
     }
@@ -116,49 +116,75 @@ int maxVisitCount = 1;
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+
+        // Print a welcome message
+        System.out.println("*******************************");
+        System.out.println("      Welcome to Diet Planner   ");
+        System.out.println("*******************************");
+
+        System.out.println("\nLet's get started! Please fill in the following information.");
         
         int schedule;
         do {
-            System.out.print("Enter your desired schedule (minimum 15 days and maximum 30 days): ");
+            System.out.print("\n\nEnter your desired schedule (minimum 15 days and maximum 30 days): ");
             schedule = scanner.nextInt();
 
-            if (schedule < 15 || schedule>30) {
+            if (schedule < 15 || schedule > 30) {
                 System.out.println("Please enter a desired schedule for at least 15 days and at most 30 days.");
             }
-        } while (schedule < 15 || schedule>30);
+        } while (schedule < 15 || schedule > 30);
 
-
-System.out.print("Enter your current weight in kg: ");
+        // Get the current weight
+        System.out.print("\nEnter your current weight in kg: ");
         int currentWeight = scanner.nextInt();
 
-
+        // Get the amount of weight to lose
         double loseWeight;
         do {
-            System.out.print("Enter the amount of weight you want to lose in "+schedule+ " days :");
+            System.out.print("\nEnter the amount of weight you want to lose in " + schedule + " days: ");
             loseWeight = scanner.nextDouble();
 
-            if (schedule <20 && loseWeight>1.5 || schedule<30 && loseWeight>2.5) {
-                System.out.println("You should not lose you weight more the 2.5 Kg in a month and more than 1.5 Kg in 15 days. It will be harmful for your body condition!!");
+            if ((schedule < 20 && loseWeight > 1.5) || (schedule < 30 && loseWeight > 2.5)) {
+                System.out.println("WARNING: You should not lose more than 2.5 kg in a month or more than 1.5 kg in 15 days. It can be harmful to your body.");
             }
-        } while (schedule <20 && loseWeight>1.5 || schedule<30 && loseWeight>2.5);
+        } while ((schedule < 20 && loseWeight > 1.5) || (schedule < 30 && loseWeight > 2.5));
 
-
-        System.out.print("Enter your height in Inches: ");
+        // Get the height
+        System.out.print("\nEnter your height in inches: ");
         double height = scanner.nextDouble();
 
-        System.out.print("Enter your age: ");
+        // Get the age
+        System.out.print("\nEnter your age: ");
         int age = scanner.nextInt();
 
-        System.out.print("Enter your gender: ");
+        // Get the gender
+        System.out.print("\nEnter your gender (Male/Female): ");
         String gender = scanner.next();
 
-double loseWeightInCalories=(loseWeight*7700)/schedule;
-double[] doubleArray = new double[30];
+        // Close the scanner
+        scanner.close();
 
-        // Set all elements to 5.0
-        for (int i = 0; i < 30; i++) {
-            doubleArray[i] = Math.ceil(loseWeightInCalories);
-        }
+        // Display a summary
+        System.out.println("\n*******************************");
+        System.out.println("        User Information       ");
+        System.out.println("*******************************");
+        System.out.println("Schedule: " + schedule + " days");
+        System.out.println("Current Weight: " + currentWeight + " kg");
+        System.out.println("Weight to Lose: " + loseWeight + " kg");
+        System.out.println("Height: " + height + " inches");
+        System.out.println("Age: " + age + " years");
+        System.out.println("Gender: " + gender);
+
+
+double BMR=calculateDailyCalories(currentWeight, height, age, gender);
+
+        System.out.println("\nYour BMR is: "+BMR+" Calories/day");
+
+        System.out.println("\n***********************************");
+System.out.println("*    Diet Planner - Meal Recommendation    *");
+System.out.println("***********************************\n");
+double loseWeightInCalories=(loseWeight*7700)/schedule;
+
         
         String[] mealItems = {
         "Biryani", "Calories: 700",
@@ -192,9 +218,41 @@ double[] doubleArray = new double[30];
         "Roti (Chapati)", "Calories: 80",
         "Dal (Lentil Soup)", "Calories: 150",
 };
+
+String[] mealNames = {
+     "Biryani",
+        "Fish Curry with Rice",
+        "Khichuri",
+        "Chicken Bhuna",
+        "Bhat with Hilsha Fish",
+        "Beef Korma",
+        "Shorshe Ilish",
+        "Dal with Chapati",
+        "Cauliflower Bhaji",
+        "Chingri Bhapa",
+        "Beef Bhuna",
+        "Aloo Posto",
+        "Machher Jhol",
+        "Luchi with Alur Dom", 
+        "Mishti Doi",
+        "Kacchi Biryani",
+        "Morog Polao",
+        "Bhapa Doi",
+        "Shutki Bhorta",
+        "Patishapta",
+        "Chitol Macher Muitha",
+        "Kala Bhuna",
+        "Begun Bhaja",
+        "Chapati with Chicken Curry",
+        "Labra (Mixed Vegetable0",
+        "Bhapa Ilish",
+        "Fried Rice",
+        "Kheer",
+        "Roti (Chapati)",
+        "Dal (Lentil Soup)"  
+};
 dietPlanner d= new dietPlanner(mealItems);
-d.printGraph(schedule,calculateDailyCalories(currentWeight, height, age, gender),loseWeightInCalories,doubleArray);
-// double dailyCalories = ;
-//  System.out.println("Your daily calories are : "+dailyCalories);
+
+d.printGraph(schedule,BMR,loseWeightInCalories, mealNames);
     }
 }
